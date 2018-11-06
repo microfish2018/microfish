@@ -1,0 +1,45 @@
+import requests
+from bs4 import BeautifulSoup
+import datetime
+
+def get_page(link):
+    headers = {'User-Agent' : 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'} 
+    r = requests.get(link, headers = headers)
+    html = r.content
+    html = html.decode('utf-8')
+    soup = BeautifulSoup(html, 'lxml')
+    return soup
+
+def get_data(post_list):
+    data_list =[]
+    for post in post_list:
+        title_td = post.find('td',class_='p_title')
+        title = title_td.find('a', id=True).text.strip()
+        post_link = title_td.find('a', id=True)['href']
+        post_link = 'https://bbs.hupu.com' + post_link
+
+        author = post.find('td',class_='p_author').a.text.strip()
+        author_page = post.find('td',class_='p_author').a['href']
+        start_date = post.find('td',class_='p_author').contents[2]
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+
+        reply_view = post.find('td',class_='p_re').text.strip()
+        reply = reply_view.split('/')[0].strip()
+        view = reply_view.split('/')[1].strip()
+
+        reply_time = post.find('td',class_='p_retime').a.text.strip()
+        last_reply = post.find('td',class_='p_retime').contents[2]
+        if ':' in reply_time:
+            date_time = str(datetime.date.today()) + ' ' + reply_time
+            date_time = datetime.datetime.strptime(date_time, '%Y-%m-%d %H:%M')
+        else:
+            date_time = datetime.datetime.strptime('2017-' + reply_time, '%Y-%m-%d').date()
+        data_list.append([title, post_link, author, author_page, start_date, reply, view, last_reply, date_time])
+    return data_list
+
+link = "https://bbs.hupu.com/bxj"
+soup = get_page(link)
+post_list = soup.find_all('tr', mid=True)
+data_list = get_data(post_list)
+for each in data_list:
+    print (each)
